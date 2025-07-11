@@ -7,7 +7,12 @@
 
 ### Running the Program
 
-1. **Using the provided script:**
+1. **Change file mode:**
+   ```bash
+   chmod +x run.sh
+   ```
+
+2. **Run command:**
    ```bash
    ./run.sh
    ```
