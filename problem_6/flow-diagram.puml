@@ -1,0 +1,84 @@
+@startuml
+
+actor Player
+participant "Game Client" as Client
+participant "API Gateway / Rate Limiter" as APIGateway
+participant "Auth Service" as AuthService
+participant "Score Service" as ScoreService
+participant "Leaderboard Service" as LeaderboardService
+database "Database" as PostgreSQL
+database "Cache" as Redis
+
+Player -> Client : Completes game action, earns points
+activate Client
+Client -> Client : Calculates scoreIncrement based on action
+Client -> APIGateway : PUT /api/v1/scores
+activate APIGateway
+
+APIGateway -> APIGateway : Apply Rate Limiting
+APIGateway -> AuthService : Validate JWT Token
+activate AuthService
+AuthService --> APIGateway : Valid/Invalid Token (User ID)
+deactivate AuthService
+
+alt Valid Token
+    APIGateway -> ScoreService : Forward Request (User ID, actionId, actionType, scoreIncrement)
+    activate ScoreService
+
+    ScoreService -> PostgreSQL : SELECT current_score FROM Users WHERE id = userId
+    activate PostgreSQL
+    PostgreSQL --> ScoreService : current_score
+    deactivate PostgreSQL
+
+    ScoreService -> ScoreService : Calculate newScore = current_score + scoreIncrement
+
+    alt newScore > current_score (or initial update)
+        ScoreService -> PostgreSQL : UPDATE Users SET score = newScore WHERE id = userId
+        activate PostgreSQL
+        PostgreSQL --> ScoreService : Acknowledge Update
+        deactivate PostgreSQL
+
+        ScoreService -> PostgreSQL : INSERT into Scores (userId, actionId, actionType, score, timestamp)
+        activate PostgreSQL
+        PostgreSQL --> ScoreService : Acknowledge Insert
+        deactivate PostgreSQL
+
+        ScoreService -> PostgreSQL : INSERT into AuditLogs (userId, eventType="SCORE_CHANGE", oldData, newData)
+        activate PostgreSQL
+        PostgreSQL --> ScoreService : Acknowledge Audit
+        deactivate PostgreSQL
+
+        ScoreService -> Redis : Invalidate/Update User Score Cache (User ID, newScore)
+        activate Redis
+        Redis --> ScoreService : Acknowledge Cache Update
+        deactivate Redis
+
+        ScoreService -> LeaderboardService : Notify Score Changed (User ID, newScore)
+        activate LeaderboardService
+        LeaderboardService -> Redis : Update Leaderboard Cache (30s TTL)
+        activate Redis
+        Redis --> LeaderboardService : Cache Updated
+        deactivate Redis
+
+        LeaderboardService -> LeaderboardService : Determine new leaderboardPosition
+        LeaderboardService -> Client : Broadcast via WebSocket: leaderboardUpdate event
+        LeaderboardService -> Client : Broadcast via WebSocket: scoreUpdate event (newScore, newPosition)
+        deactivate LeaderboardService
+
+        ScoreService --> APIGateway : Response: {newScore, leaderboardPosition}
+    else newScore <= current_score
+        ScoreService --> APIGateway : Response: Error (e.g., "Score not improved" or "Invalid increment")
+    end
+    deactivate ScoreService
+
+    APIGateway --> Client : Response: {newScore, leaderboardPosition} or Error (4xx, 5xx)
+
+else Invalid Token (or Rate Limited)
+    APIGateway --> Client : Response: Error (401 Unauthorized or 429 Too Many Requests)
+end
+
+Client -> Client : Update local display with new score/position
+Client -> Player : Show updated score and leaderboard position
+deactivate Client
+
+@enduml
