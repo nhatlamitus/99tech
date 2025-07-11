@@ -25,7 +25,7 @@ problem_5/
 
 ## Prerequisites
 
-- Node.js (v14 or higher)
+- NodeJS
 
 ## Installation
 

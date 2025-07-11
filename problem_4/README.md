@@ -3,18 +3,18 @@
 ## How to Run
 
 ### Prerequisites
-- Node.js
+- NodeJS
 
 ### Running the Program
 
-1. **Change file mode:**
+1. **Install **
    ```bash
-   chmod +x run.sh
+   npm install -g ts-node
    ```
 
-2. **Run command:**
+2. **Change file mode:**
    ```bash
-   ./run.sh
+   ts-node main.ts
    ```
 
 ### Expected Output
