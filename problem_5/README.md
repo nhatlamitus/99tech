@@ -8,14 +8,19 @@ A RESTful API built with Express.js and SQLite for managing products.
 problem_5/
 ├── src/
 │   ├── config/
-│   │      └── database.js     # Database configuration
-│   ├── controllers/           # Route handlers
-│   ├── services/              # Business logic
-│   ├── repositories/          # Data access layer
-│   ├── app.js                 # Express app setup
-│   └── server.js              # Server entry point
-├── data/
-│   └── database.sqlite        # SQLite database file
+│   │   └── database.js
+│   ├── controllers/
+│   ├── services/
+│   ├── repositories/
+│   ├── models/
+│   ├── data/
+│   │   └── database.sqlite
+│   ├── app.js
+│   └── server.js
+├── package.json
+├── package-lock.json
+├── env.example
+├── README.md
 ```
 
 ## Prerequisites
