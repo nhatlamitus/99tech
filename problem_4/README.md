@@ -7,12 +7,12 @@
 
 ### Running the Program
 
-1. **Install **
+1. **Install ts-node**
    ```bash
    npm install -g ts-node
    ```
 
-2. **Change file mode:**
+2. **Run command:**
    ```bash
    ts-node main.ts
    ```
